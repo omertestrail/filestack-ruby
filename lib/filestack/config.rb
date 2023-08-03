@@ -1,11 +1,13 @@
+# frozen_string_literal: true
+
 require 'filestack/ruby/version'
 
 include Filestack
 
 class FilestackConfig
-  API_URL = 'https://www.filestackapi.com/api'.freeze
-  CDN_URL = 'https://cdn.filestackcontent.com'.freeze
-  PROCESS_URL = 'https://process.filestackapi.com'.freeze
+  API_URL = 'https://www.filestackapi.com/api'
+  CDN_URL = 'https://cdn.filestackcontent.com'
+  PROCESS_URL = 'https://process.filestackapi.com'
 
   MULTIPART_PARAMS = %w[
     store_location store_region store_container
@@ -18,16 +20,16 @@ class FilestackConfig
   HEADERS = {
     'User-Agent' => "filestack-ruby #{VERSION}",
     'Filestack-Source' => "Ruby-#{VERSION}",
-    'Content-Type' => "application/json",
-    'Accept-Encoding' => "application/json"
+    'Content-Type' => 'application/json',
+    'Accept-Encoding' => 'application/json'
   }.freeze
 
   DEFAULT_UPLOAD_MIMETYPE = 'application/octet-stream'
 
-  INTELLIGENT_ERROR_MESSAGES = ['BACKEND_SERVER', 'BACKEND_NETWORK', 'S3_SERVER', 'S3_NETWORK']
+  INTELLIGENT_ERROR_MESSAGES = %w[BACKEND_SERVER BACKEND_NETWORK S3_SERVER S3_NETWORK].freeze
 
   def self.multipart_start_url
-    "https://upload.filestackapi.com/multipart/start"
+    'https://upload.filestackapi.com/multipart/start'
   end
 
   def self.multipart_upload_url(base_url)

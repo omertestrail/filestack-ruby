@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'filestack/config'
 require 'filestack/models/filestack_av'
 require 'json'
@@ -50,16 +52,14 @@ class Transform
   #
   # @return [Filestack::AV]
   def av_convert(options)
-    if @external_url
-      return 'av_convert does not support external URLs. Please upload file first.'
-    end
+    return 'av_convert does not support external URLs. Please upload file first.' if @external_url
+
     @transform_tasks.push(
       add_transform_task('video_convert', options)
     )
     response = UploadUtils.make_call(url, 'post')
-    if response.code == 200
-      return AV.new(url, apikey: @apikey, security: @security)
-    end
+    return AV.new(url, apikey: @apikey, security: @security) if response.code == 200
+
     JSON.parse(response.body)
   end
 

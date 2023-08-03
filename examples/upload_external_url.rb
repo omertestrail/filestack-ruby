@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'filestack'
 
 # intelligent upload flow requires you to pass in the intelligent parameter

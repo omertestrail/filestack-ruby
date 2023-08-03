@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'simplecov'
 SimpleCov.start
 
@@ -24,9 +26,7 @@ class Response
     'thisissomecontent'
   end
 
-  def code
-    @code
-  end
+  attr_reader :code
 end
 
 class GeneralResponse
@@ -36,37 +36,32 @@ class GeneralResponse
     @code = error_number
     @body = body_content.to_json
   end
-
-  def code
-    @code
-  end
 end
-
 
 RSpec.describe Filestack::Ruby do
   before(:each) do
     @test_handle = 'V059dRmSeWHT5WbiXssg'
     @test_apikey = 'YOUR_API_KEY'
     @test_secret = 'YOUR_SECRET'
-    @test_filepath = __dir__ + '/../../test-files/calvinandhobbes.jpg'
+    @test_filepath = "#{__dir__}/../../test-files/calvinandhobbes.jpg"
     @test_io = StringIO.new(File.open(@test_filepath).read)
-    @test_download =  __dir__ + '/../../test-files/test'
+    @test_download = "#{__dir__}/../../test-files/test"
     @test_filename = 'calvinandhobbes.jpg'
-    @test_filesize = 10000
-    @test_io_size = 16542
+    @test_filesize = 10_000
+    @test_io_size = 16_542
     @test_mimetype = 'image/jpeg'
     @storage = 's3'
     @start_response = {
       'uri' => 'uri',
       'region' => 'region',
       'upload_id' => 'upload_id',
-      'location_url' => 'location_url',
+      'location_url' => 'location_url'
     }
     @intelligent_start_response = {
       'uri' => 'uri',
       'region' => 'region',
       'upload_id' => 'upload_id',
-      'location_url' => 'location_url',
+      'location_url' => 'location_url'
     }
     @job = {
       seek_point: 0,
@@ -86,7 +81,7 @@ RSpec.describe Filestack::Ruby do
     @test_secure_client = FilestackClient.new(@test_apikey, security: @test_security)
     @test_secure_filelink = FilestackFilelink.new(@test_apikey, security: @test_security)
     @test_transform = Transform.new(apikey: @test_apikey, handle: @test_handle, security: @test_security)
-    @options = { filename: "filename.png" }
+    @options = { filename: 'filename.png' }
   end
 
   it 'has a version number' do
@@ -133,13 +128,13 @@ RSpec.describe Filestack::Ruby do
         { handle: 'somehandle',
           url: 'https://cdn.filestackcontent.com/somehandle' }.to_json
       end
-
     end
     allow(Typhoeus).to receive(:post)
       .and_return(UploadResponse.new)
     filelink = @test_secure_client.upload(filepath: @test_filepath)
     expect(filelink.handle).to eq('somehandle')
-    expect(filelink.upload_response).to eq({ "handle" => "somehandle", "url" => "https://cdn.filestackcontent.com/somehandle" })
+    expect(filelink.upload_response).to eq({ 'handle' => 'somehandle',
+                                             'url' => 'https://cdn.filestackcontent.com/somehandle' })
   end
 
   it 'FilestackFilelink uploads external' do
@@ -150,15 +145,15 @@ RSpec.describe Filestack::Ruby do
 
       def body
         { handle: 'somehandle',
-          url: 'https://cdn.filestackcontent.com/somehandle'
-        }.to_json
+          url: 'https://cdn.filestackcontent.com/somehandle' }.to_json
       end
     end
     allow(Typhoeus).to receive(:post)
       .and_return(UploadResponse.new)
     filelink = @test_secure_client.upload(external_url: @test_filepath)
     expect(filelink.handle).to eq('somehandle')
-    expect(filelink.upload_response).to eq({ "handle" => "somehandle", "url" => "https://cdn.filestackcontent.com/somehandle" })
+    expect(filelink.upload_response).to eq({ 'handle' => 'somehandle',
+                                             'url' => 'https://cdn.filestackcontent.com/somehandle' })
   end
 
   it 'FilestackFilelink uploads io object' do
@@ -171,7 +166,6 @@ RSpec.describe Filestack::Ruby do
         { handle: 'somehandle',
           url: 'https://cdn.filestackcontent.com/somehandle' }.to_json
       end
-
     end
     allow(Typhoeus).to receive(:post)
       .and_return(UploadResponse.new)
@@ -192,7 +186,7 @@ RSpec.describe Filestack::Ruby do
   it 'zips corectly' do
     allow(Typhoeus).to receive(:get)
       .and_return(GeneralResponse.new('somebytes'))
-    @test_client.zip('test-files/test.zip', ["https://www.example.com","https://www.example.com"])
+    @test_client.zip('test-files/test.zip', ['https://www.example.com', 'https://www.example.com'])
   end
 
   ######################
@@ -282,7 +276,7 @@ RSpec.describe Filestack::Ruby do
       jobs.push(@job)
     end
     part = @job[:part]
-    result = { part_number: part, etag: "someetag" }
+    result = { part_number: part, etag: 'someetag' }
 
     allow(MultipartUploadUtils).to receive(:upload_chunk)
       .and_return(HeadersResponse.new)
@@ -327,8 +321,8 @@ RSpec.describe Filestack::Ruby do
     allow_any_instance_of(MultipartUploadUtils).to receive(:run_uploads)
       .and_return(['somepartsandetags'])
     allow_any_instance_of(MultipartUploadUtils).to receive(:multipart_complete)
-      .and_return(GeneralResponse.new({'handle' => 'somehandle'}))
-    filelink = @test_client.upload(filepath: @test_filepath)
+      .and_return(GeneralResponse.new({ 'handle' => 'somehandle' }))
+    @test_client.upload(filepath: @test_filepath)
   end
 
   ##############################
@@ -341,7 +335,7 @@ RSpec.describe Filestack::Ruby do
     allow_any_instance_of(IntelligentUtils).to receive(:run_intelligent_upload_flow)
       .and_return(true)
     allow_any_instance_of(MultipartUploadUtils).to receive(:multipart_complete)
-      .and_return(GeneralResponse.new({'handle' => 'somehandle'}))
+      .and_return(GeneralResponse.new({ 'handle' => 'somehandle' }))
     filelink = @test_client.upload(filepath: @test_filepath, intelligent: true)
     expect(filelink.handle).to eq('somehandle')
   end
@@ -353,7 +347,7 @@ RSpec.describe Filestack::Ruby do
       .and_return(true)
     allow_any_instance_of(MultipartUploadUtils).to receive(:multipart_complete)
       .and_return(GeneralResponse.new({ 'handle' => 'somehandle' }, 202))
-    expect{@test_client.upload(filepath: @test_filepath, intelligent: true, timeout: 1)}.to raise_error(RuntimeError)
+    expect { @test_client.upload(filepath: @test_filepath, intelligent: true, timeout: 1) }.to raise_error(RuntimeError)
   end
 
   it 'creates a batch of jobs' do
@@ -370,7 +364,7 @@ RSpec.describe Filestack::Ruby do
 
   it 'runs intelligent upload flow without failure' do
     state = IntelligentState.new
-    filename, filesize, mimetype = MultipartUploadUtils.get_file_attributes(@test_filepath)
+    filename, filesize, = MultipartUploadUtils.get_file_attributes(@test_filepath)
     jobs = create_upload_jobs(
       @test_apikey, filename, filesize, @start_response, @storage, {}
     )
@@ -383,7 +377,7 @@ RSpec.describe Filestack::Ruby do
 
   it 'runs intelligent upload flow with failure' do
     state = IntelligentState.new
-    filename, filesize, mimetype = MultipartUploadUtils.get_file_attributes(@test_filepath)
+    filename, filesize, = MultipartUploadUtils.get_file_attributes(@test_filepath)
     state.ok = false
     jobs = MultipartUploadUtils.create_upload_jobs(
       @test_apikey, filename, filesize, @start_response, @storage, {}
@@ -391,12 +385,14 @@ RSpec.describe Filestack::Ruby do
     allow(IntelligentUtils).to receive(:run_intelligent_uploads)
       .and_return(state)
 
-    expect {IntelligentUtils.run_intelligent_upload_flow(jobs, @test_filepath, nil, state, @storage)}.to raise_error(RuntimeError)
+    expect do
+      IntelligentUtils.run_intelligent_upload_flow(jobs, @test_filepath, nil, state, @storage)
+    end.to raise_error(RuntimeError)
   end
 
   it 'runs intelligent uploads without error' do
     state = IntelligentState.new
-    filename, filesize, mimetype = MultipartUploadUtils.get_file_attributes(@test_filepath)
+    filename, filesize, = MultipartUploadUtils.get_file_attributes(@test_filepath)
     jobs = create_upload_jobs(
       @test_apikey, filename, filesize, @start_response, @storage, {}
     )
@@ -411,7 +407,7 @@ RSpec.describe Filestack::Ruby do
 
   it 'runs intelligent uploads with failure error' do
     state = IntelligentState.new
-    filename, filesize, mimetype = MultipartUploadUtils.get_file_attributes(@test_filepath)
+    filename, filesize, = MultipartUploadUtils.get_file_attributes(@test_filepath)
     jobs = create_upload_jobs(
       @test_apikey, filename, filesize, @start_response, @storage, {}
     )
@@ -425,7 +421,7 @@ RSpec.describe Filestack::Ruby do
 
   it 'retries upon failure' do
     state = IntelligentState.new
-    filename, filesize, mimetype = MultipartUploadUtils.get_file_attributes(@test_filepath)
+    filename, filesize, = MultipartUploadUtils.get_file_attributes(@test_filepath)
     jobs = create_upload_jobs(
       @test_apikey, filename, filesize, @start_response, @storage, {}
     )
@@ -433,12 +429,14 @@ RSpec.describe Filestack::Ruby do
     state.error_type = 'BACKEND_SERVER'
     allow_any_instance_of(IntelligentUtils).to receive(:run_intelligent_uploads)
       .and_return(state)
-    expect {IntelligentUtils.run_intelligent_upload_flow(jobs, @test_filepath, nil, state, @storage)}.to raise_error(RuntimeError)
+    expect do
+      IntelligentUtils.run_intelligent_upload_flow(jobs, @test_filepath, nil, state, @storage)
+    end.to raise_error(RuntimeError)
   end
 
   it 'retries upon network failure' do
     state = IntelligentState.new
-    filename, filesize, mimetype = MultipartUploadUtils.get_file_attributes(@test_filepath)
+    filename, filesize, = MultipartUploadUtils.get_file_attributes(@test_filepath)
     jobs = create_upload_jobs(
       @test_apikey, filename, filesize, @start_response, @storage, {}
     )
@@ -446,12 +444,14 @@ RSpec.describe Filestack::Ruby do
     state.error_type = 'S3_NETWORK'
     allow_any_instance_of(IntelligentUtils).to receive(:run_intelligent_uploads)
       .and_return(state)
-    expect {IntelligentUtils.run_intelligent_upload_flow(jobs, @test_filepath, nil, state, @storage)}.to raise_error(RuntimeError)
+    expect do
+      IntelligentUtils.run_intelligent_upload_flow(jobs, @test_filepath, nil, state, @storage)
+    end.to raise_error(RuntimeError)
   end
 
   it 'retries upon server failure' do
     state = IntelligentState.new
-    filename, filesize, mimetype = MultipartUploadUtils.get_file_attributes(@test_filepath)
+    filename, filesize, = MultipartUploadUtils.get_file_attributes(@test_filepath)
     jobs = create_upload_jobs(
       @test_apikey, filename, filesize, @start_response, @storage, {}
     )
@@ -459,12 +459,14 @@ RSpec.describe Filestack::Ruby do
     state.error_type = 'S3_SERVER'
     allow_any_instance_of(IntelligentUtils).to receive(:run_intelligent_uploads)
       .and_return(state)
-    expect {IntelligentUtils.run_intelligent_upload_flow(jobs, @test_filepath, nil, state, @storage)}.to raise_error(RuntimeError)
+    expect do
+      IntelligentUtils.run_intelligent_upload_flow(jobs, @test_filepath, nil, state, @storage)
+    end.to raise_error(RuntimeError)
   end
 
   it 'retries upon backend network failure' do
     state = IntelligentState.new
-    filename, filesize, mimetype = MultipartUploadUtils.get_file_attributes(@test_filepath)
+    filename, filesize, = MultipartUploadUtils.get_file_attributes(@test_filepath)
     jobs = create_upload_jobs(
       @test_apikey, filename, filesize, @start_response, @storage, {}
     )
@@ -472,12 +474,14 @@ RSpec.describe Filestack::Ruby do
     state.error_type = 'BACKEND_NETWORK'
     allow_any_instance_of(IntelligentUtils).to receive(:run_intelligent_uploads)
       .and_return(state)
-    expect {IntelligentUtils.run_intelligent_upload_flow(jobs, @test_filepath, nil, state, @storage)}.to raise_error(RuntimeError)
+    expect do
+      IntelligentUtils.run_intelligent_upload_flow(jobs, @test_filepath, nil, state, @storage)
+    end.to raise_error(RuntimeError)
   end
 
   it 'runs intelligent uploads with 400 error' do
     state = IntelligentState.new
-    filename, filesize, mimetype = MultipartUploadUtils.get_file_attributes(@test_filepath)
+    filename, filesize, = MultipartUploadUtils.get_file_attributes(@test_filepath)
     jobs = create_upload_jobs(
       @test_apikey, filename, filesize, @start_response, @storage, {}
     )
@@ -505,7 +509,7 @@ RSpec.describe Filestack::Ruby do
     end
 
     state = IntelligentState.new
-    filename, filesize, mimetype = MultipartUploadUtils.get_file_attributes(@test_filepath)
+    filename, filesize, = MultipartUploadUtils.get_file_attributes(@test_filepath)
     jobs = create_upload_jobs(
       @test_apikey, filename, filesize, @start_response, @storage, {}
     )
@@ -515,11 +519,12 @@ RSpec.describe Filestack::Ruby do
     allow(Typhoeus).to receive(:put)
       .and_return(@response)
     jobs[0][:offset] = 0
-    response = IntelligentUtils.upload_chunk_intelligently(jobs[0], state, @test_apikey, @test_filepath, nil, {}, @storage)
+    response = IntelligentUtils.upload_chunk_intelligently(jobs[0], state, @test_apikey, @test_filepath, nil, {},
+                                                           @storage)
     expect(response.code).to eq(200)
   end
 
-   it 'catches failure' do
+  it 'catches failure' do
     class FilestackResponse
       def body
         {
@@ -534,7 +539,7 @@ RSpec.describe Filestack::Ruby do
     end
 
     state = IntelligentState.new
-    filename, filesize, mimetype = MultipartUploadUtils.get_file_attributes(@test_filepath)
+    filename, filesize, = MultipartUploadUtils.get_file_attributes(@test_filepath)
     jobs = create_upload_jobs(
       @test_apikey, filename, filesize, @start_response, @storage, {}
     )
@@ -544,9 +549,11 @@ RSpec.describe Filestack::Ruby do
     allow(Typhoeus).to receive(:put)
       .and_return(Response.new(400))
     jobs[0][:offset] = 0
-    expect {IntelligentUtils.upload_chunk_intelligently(jobs[0], state, @test_apikey, @test_filepath, nil, {}, @storage)}.to raise_error(RuntimeError)
+    expect do
+      IntelligentUtils.upload_chunk_intelligently(jobs[0], state, @test_apikey, @test_filepath, nil, {},
+                                                  @storage)
+    end.to raise_error(RuntimeError)
   end
-
 
   #########################
   ## COMMON MIXIN TESTING #
@@ -572,7 +579,7 @@ RSpec.describe Filestack::Ruby do
     allow(UploadUtils).to receive(:make_call)
       .and_return(@response)
 
-    delete = @test_secure_filelink.delete()
+    delete = @test_secure_filelink.delete
     expect(delete.body).to eq(@response.body)
   end
 
@@ -595,28 +602,29 @@ RSpec.describe Filestack::Ruby do
 
   it 'gets metadata' do
     allow(UploadUtils).to receive(:make_call)
-      .and_return(GeneralResponse.new({data: 'data'}))
+      .and_return(GeneralResponse.new({ data: 'data' }))
     metadata = @test_filelink.metadata
     expect(metadata['data']).to eq('data')
   end
 
   it 'gets metadata with security' do
     allow(UploadUtils).to receive(:make_call)
-      .and_return(GeneralResponse.new({data: 'data'}))
+      .and_return(GeneralResponse.new({ data: 'data' }))
     metadata = @test_secure_filelink.metadata
     expect(metadata['data']).to eq('data')
   end
 
   it 'build store task with workflows' do
-    expect(UploadUtils.build_store_task({ workflows: ["dc7c9132-b11f-4159-bc6f96a196e00b2fd"] })).to eq("store=workflows:[\"dc7c9132-b11f-4159-bc6f96a196e00b2fd\"]")
+    expect(UploadUtils.build_store_task({ workflows: ['dc7c9132-b11f-4159-bc6f96a196e00b2fd'] })).to eq('store=workflows:["dc7c9132-b11f-4159-bc6f96a196e00b2fd"]')
   end
 
   it 'build store task with path and location name' do
-    expect(UploadUtils.build_store_task({ path: 'path_name', location: 'dropbox' })).to eq("store=path:\"path_name\",location:dropbox")
+    expect(UploadUtils.build_store_task({ path: 'path_name',
+                                          location: 'dropbox' })).to eq('store=path:"path_name",location:dropbox')
   end
 
   it 'build store task without options' do
-    expect(UploadUtils.build_store_task).to eq("store")
+    expect(UploadUtils.build_store_task).to eq('store')
   end
 
   it 'handles non json response' do
@@ -626,15 +634,15 @@ RSpec.describe Filestack::Ruby do
       end
 
       def body
-        "docs provider error: conversion was taking too long (idx 0)"
+        'docs provider error: conversion was taking too long (idx 0)'
       end
     end
 
     allow(Typhoeus).to receive(:post)
       .and_return(UploadResponse.new)
-    expect {
-      lamdba UploadUtils.send_upload("fakekey")
-    }.to raise_error(RuntimeError, "docs provider error: conversion was taking too long (idx 0)")
+    expect do
+      lamdba UploadUtils.send_upload('fakekey')
+    end.to raise_error(RuntimeError, 'docs provider error: conversion was taking too long (idx 0)')
   end
 
   ###################
@@ -648,9 +656,9 @@ RSpec.describe Filestack::Ruby do
   end
 
   it 'does not call the wrong transform method' do
-    expect {
+    expect do
       lambda @test_transform.wrong_transformation(width: 100, height: 100)
-    }.to raise_error(NoMethodError)
+    end.to raise_error(NoMethodError)
   end
 
   it 'creates AV class' do
