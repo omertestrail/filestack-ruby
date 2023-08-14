@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'filestack/ruby/version'
 require 'filestack/config'
 require 'filestack/utils/utils'

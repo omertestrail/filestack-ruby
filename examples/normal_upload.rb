@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'filestack'
 
 client = FilestackClient.new('APIKEY')

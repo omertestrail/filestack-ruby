@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'base64'
 require 'digest'
 require 'fiber'
@@ -8,14 +10,15 @@ require 'typhoeus'
 require 'filestack/config'
 class IntelligentState
   attr_accessor :offset, :ok, :error_type
+
   def initialize
-    @offset = 524288
+    @offset = 524_288
     @ok = true
     @alive = true
     @retries = 0
     @backoff = 1
     @offset_index = 0
-    @offset_sizes = [524288, 262144, 131072, 65536, 32768]
+    @offset_sizes = [524_288, 262_144, 131_072, 65_536, 32_768]
   end
 
   def alive?
@@ -28,13 +31,13 @@ class IntelligentState
   end
 
   def backoff
-    @backoff = 2 ** @retries
+    @backoff = 2**@retries
   end
 
   def next_offset
     current_offset = @offset_sizes[@offset_index]
     @offset_index += 1
-    return current_offset
+    current_offset
   end
 
   def reset
@@ -58,12 +61,13 @@ module UploadUtils
                 FilestackConfig::HEADERS
               end
     Typhoeus.public_send(
-      action, URI.encode(url), params: parameters, headers: headers
+      action, CGI.escape(url), params: parameters, headers: headers
     )
   end
 
   def build_store_task(options = {})
     return 'store' if options.nil? || options.empty?
+
     tasks = []
     options.each do |key, value|
       value = case key
@@ -103,7 +107,7 @@ module UploadUtils
       begin
         response_body = JSON.parse(response.body)
         return response_body
-      rescue
+      rescue StandardError
         raise response.body
       end
     end
@@ -167,7 +171,7 @@ module IntelligentUtils
     4.times do
       batch.push(generator.resume) if generator.alive?
     end
-    return batch
+    batch
   end
 
   # Check if state is in error state
@@ -218,13 +222,14 @@ module IntelligentUtils
             sleep(5)
             state.offset = working_offset = change_offset(working_offset, state)
           # condition: timeout to backend, requiring only backoff
-          elsif ['S3_SERVER', 'BACKEND_SERVER'].include? state.error_type
+          elsif %w[S3_SERVER BACKEND_SERVER].include? state.error_type
             sleep(state.backoff)
           end
           state.add_retry
           state = run_intelligent_uploads(part, filepath, io, state, storage)
         end
-        raise "Upload has failed. Please try again later." unless state.ok
+        raise 'Upload has failed. Please try again later.' unless state.ok
+
         bar.increment!
       end
     end
@@ -238,7 +243,7 @@ module IntelligentUtils
   def create_intelligent_generator(jobs)
     jobs_gen = jobs.lazy.each
     Fiber.new do
-      (jobs.length-1).times do
+      (jobs.length - 1).times do
         Fiber.yield jobs_gen.next
       end
       jobs_gen.next
@@ -258,11 +263,11 @@ module IntelligentUtils
   #
   # @return [Array]
   def create_upload_job_chunks(jobs, state, apikey, filename, filepath, filesize, start_response)
-    jobs.each { |job|
+    jobs.each do |job|
       job[:chunks] = chunk_job(
         job, state, apikey, filename, filepath, filesize, start_response
       )
-    }
+    end
     jobs
   end
 
@@ -315,13 +320,11 @@ module IntelligentUtils
       part, state, part[:apikey], part[:filename], part[:filesize], part[:start_response], storage
     )
     Parallel.map(chunks, in_threads: 3) do |chunk|
-      begin
-        upload_chunk_intelligently(chunk, state, part[:apikey], filepath, io, part[:options], storage)
-      rescue => e
-        state.error_type = e.message
-        failed = true
-        Parallel::Kill
-      end
+      upload_chunk_intelligently(chunk, state, part[:apikey], filepath, io, part[:options], storage)
+    rescue StandardError => e
+      state.error_type = e.message
+      failed = true
+      Parallel::Kill
     end
 
     if failed
@@ -385,7 +388,7 @@ module IntelligentUtils
       fii: true
     }
 
-    data = data.merge!(options) if options
+    data.merge!(options) if options
 
     fs_response = Typhoeus.post(FilestackConfig.multipart_upload_url(job[:location_url]),
                                 body: data.to_json,
@@ -394,14 +397,12 @@ module IntelligentUtils
     # POST to multipart/upload
     begin
       unless fs_response.code == 200
-        if [400, 403, 404].include? fs_response.code
-          raise 'FAILURE'
-        else
-          raise 'BACKEND_SERVER'
-        end
-      end
+        raise 'FAILURE' if [400, 403, 404].include? fs_response.code
 
-    rescue
+        raise 'BACKEND_SERVER'
+
+      end
+    rescue StandardError
       raise 'BACKEND_NETWORK'
     end
     fs_response = JSON.parse(fs_response.body)
@@ -412,14 +413,12 @@ module IntelligentUtils
         fs_response['url'], headers: fs_response['headers'], body: chunk
       )
       unless amazon_response.code == 200
-        if [400, 403, 404].include? amazon_response.code
-          raise 'FAILURE'
-        else
-          raise 'S3_SERVER'
-        end
-      end
+        raise 'FAILURE' if [400, 403, 404].include? amazon_response.code
 
-    rescue
+        raise 'S3_SERVER'
+
+      end
+    rescue StandardError
       raise 'S3_NETWORK'
     end
     amazon_response

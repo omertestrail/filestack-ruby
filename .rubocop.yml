@@ -1,0 +1,17 @@
+
+AllCops:
+  TargetRubyVersion: 3.0
+Style/PreferredHashMethods:
+  Enabled: true
+Style/RedundantParentheses:
+  Enabled: true
+Style/Documentation:
+  Enabled: true
+Style/StringLiterals:
+  Enabled: true
+Metrics/ClassLength:
+  Enabled: false
+Metrics/BlockLength:
+  Enabled: false
+Lint/ConstantDefinitionInBlock:
+  Enabled: false

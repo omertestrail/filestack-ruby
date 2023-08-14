@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'filestack/config'
 require 'filestack/utils/multipart_upload_utils'
 require 'filestack/models/filestack_transform'
@@ -36,14 +38,16 @@ class FilestackClient
     return 'You cannot upload a URL and file at the same time' if (filepath || io) && external_url
 
     response = if external_url
-                send_upload(@apikey, external_url, @security, options)
+                 send_upload(@apikey, external_url, @security, options)
                else
-                return 'You cannot upload IO object and file at the same time' if io && filepath
-                multipart_upload(@apikey, filepath, io, @security, options, timeout, storage, intelligent)
+                 return 'You cannot upload IO object and file at the same time' if io && filepath
+
+                 multipart_upload(@apikey, filepath, io, @security, options, timeout, storage, intelligent)
                end
 
     FilestackFilelink.new(response['handle'], security: @security, apikey: @apikey, upload_response: response)
   end
+
   # Transform an external URL
   #
   # @param [string]    external_url   A valid URL
@@ -56,7 +60,7 @@ class FilestackClient
   def zip(destination, files)
     encoded_files = JSON.generate(files).gsub('"', '')
     zip_url = "#{FilestackConfig::CDN_URL}/#{@apikey}/zip/#{encoded_files}"
-    escaped_zip_url = zip_url.gsub("[","%5B").gsub("]","%5D")
+    escaped_zip_url = zip_url.gsub('[', '%5B').gsub(']', '%5D')
     response = UploadUtils.make_call(escaped_zip_url, 'get')
     File.write(destination, response.body)
   end

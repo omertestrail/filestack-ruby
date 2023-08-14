@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'base64'
 require 'timeout'
 require 'digest'
@@ -13,7 +15,6 @@ include UploadUtils
 include IntelligentUtils
 # Includes all the utility functions for Filestack multipart uploads
 module MultipartUploadUtils
-
   def get_file_attributes(file, options = {})
     filename = options[:filename] || File.basename(file)
     mimetype = options[:mimetype] || get_mimetype_from_file(file) || FilestackConfig::DEFAULT_UPLOAD_MIMETYPE
@@ -67,11 +68,9 @@ module MultipartUploadUtils
                              body: params.to_json,
                              headers: FilestackConfig::HEADERS)
 
-    if response.code == 200
-      JSON.parse(response.body)
-    else
-      raise RuntimeError.new(response.body)
-    end
+    raise response.body unless response.code == 200
+
+    JSON.parse(response.body)
   end
 
   # Create array of jobs for parallel uploading
@@ -102,16 +101,16 @@ module MultipartUploadUtils
         upload_id: start_response['upload_id'],
         location_url: start_response['location_url'],
         start_response: start_response,
-        store: { location: storage },
+        store: { location: storage }
       }
 
       part_info[:store].merge!(options) if options
 
-      if seek_point + FilestackConfig::DEFAULT_CHUNK_SIZE > filesize
-        size = filesize - (seek_point)
-      else
-        size = FilestackConfig::DEFAULT_CHUNK_SIZE
-      end
+      size = if seek_point + FilestackConfig::DEFAULT_CHUNK_SIZE > filesize
+               filesize - seek_point
+             else
+               FilestackConfig::DEFAULT_CHUNK_SIZE
+             end
       part_info[:size] = size
       jobs.push(part_info)
       part += 1
@@ -119,7 +118,6 @@ module MultipartUploadUtils
     end
     jobs
   end
-
 
   # Uploads one chunk of the file
   #
@@ -149,9 +147,9 @@ module MultipartUploadUtils
       uri: job[:uri],
       region: job[:region],
       upload_id: job[:upload_id],
-      store: { location: storage },
+      store: { location: storage }
     }
-    data = data.merge!(options) if options
+    data.merge!(options) if options
 
     fs_response = Typhoeus.post(FilestackConfig.multipart_upload_url(job[:location_url]),
                                 body: data.to_json,
@@ -161,6 +159,7 @@ module MultipartUploadUtils
       fs_response['url'], headers: fs_response['headers'], body: chunk
     )
   end
+
   # Runs all jobs in parallel
   #
   # @param [Array]              jobs           Array of jobs to be run
@@ -173,19 +172,19 @@ module MultipartUploadUtils
   # @return [Array]                            Array of parts/etags strings
   def run_uploads(jobs, apikey, filepath, io, options, storage)
     bar = ProgressBar.new(jobs.length)
-    results = Parallel.map(jobs, in_threads: 4) do |job|
+    Parallel.map(jobs, in_threads: 4) do |job|
       response = upload_chunk(
         job, apikey, filepath, io, options, storage
       )
-      if response.code == 200
-        bar.increment!
-        part = job[:part]
-        etag = response.headers[:etag]
-        { part_number: part, etag: etag }
-      end
+      next unless response.code == 200
+
+      bar.increment!
+      part = job[:part]
+      etag = response.headers[:etag]
+      { part_number: part, etag: etag }
     end
-    results
   end
+
   # Send complete call to multipart endpoint
   #
   # @param [String]             apikey          Filestack API key
@@ -205,7 +204,8 @@ module MultipartUploadUtils
   # @param [Boolean]            intelligent     Upload file using Filestack Intelligent Ingestion
   #
   # @return [Typhoeus::Response]
-  def multipart_complete(apikey, filename, filesize, mimetype, start_response, parts_and_etags, options, storage, intelligent = false)
+  def multipart_complete(apikey, filename, filesize, mimetype, start_response, parts_and_etags, options, storage,
+                         intelligent = false)
     data = {
       apikey: apikey,
       uri: start_response['uri'],
@@ -214,7 +214,7 @@ module MultipartUploadUtils
       filename: filename,
       size: filesize,
       mimetype: mimetype,
-      store: { location: storage },
+      store: { location: storage }
     }
     data[:store].merge!(options) if options
     data.merge!(intelligent ? { fii: intelligent } : { parts: parts_and_etags })
@@ -239,9 +239,9 @@ module MultipartUploadUtils
   # @return [Hash]
   def multipart_upload(apikey, filepath, io, security, options, timeout, storage, intelligent = false)
     filename, filesize, mimetype = if filepath
-                                    get_file_attributes(filepath, options)
+                                     get_file_attributes(filepath, options)
                                    else
-                                    get_io_attributes(io, options)
+                                     get_io_attributes(io, options)
                                    end
 
     start_response = multipart_start(
@@ -267,16 +267,16 @@ module MultipartUploadUtils
       )
     end
     begin
-      Timeout::timeout(timeout) {
+      Timeout.timeout(timeout) do
         while response_complete.code == 202
           response_complete = multipart_complete(
             apikey, filename, filesize, mimetype,
             start_response, nil, options, storage, intelligent
           )
         end
-      }
-    rescue
-      raise "Upload timed out upon completion. Please try again later"
+      end
+    rescue StandardError
+      raise 'Upload timed out upon completion. Please try again later'
     end
     JSON.parse(response_complete.body)
   end
@@ -286,6 +286,6 @@ module MultipartUploadUtils
   def get_mimetype_from_file(file)
     file_info = MiniMime.lookup_by_filename(File.open(file))
 
-    file_info ? file_info.content_type : nil
+    file_info&.content_type
   end
 end

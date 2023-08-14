@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'filestack/config'
 require 'filestack/utils/utils'
 require 'filestack/utils/multipart_upload_utils'
@@ -37,6 +39,7 @@ module FilestackCommon
   # @return [Typhoeus::Response]
   def send_delete(handle, apikey, security)
     return 'Delete requires security' if security.nil?
+
     signature = security.signature
     policy = security.policy
     base = "#{FilestackConfig::API_URL}/file"
@@ -103,9 +106,8 @@ module FilestackCommon
     end
     response = UploadUtils.make_call(url, 'get', parameters: params)
 
-    if response.code == 200
-      return JSON.parse(response.body)
-    end
+    return JSON.parse(response.body) if response.code == 200
+
     raise response.body
   end
 end

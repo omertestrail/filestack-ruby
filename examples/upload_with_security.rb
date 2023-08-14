@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'filestack'
 
 security = FilestackSecurity.new('APP_SECRET')

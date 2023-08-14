@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'filestack/models/filelink'
 require 'filestack/utils/utils'
 require 'json'
@@ -19,6 +21,7 @@ class AV
   # @return [Filestack::FilestackFilelink]
   def to_filelink
     return 'Video conversion incomplete' unless status == 'completed'
+
     response = UploadUtils.make_call(@url, 'get')
     response_body = JSON.parse(response.body)
     handle = response_body['data']['url'].split('/').last
