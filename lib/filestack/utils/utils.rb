@@ -6,6 +6,7 @@ require 'fiber'
 require 'mini_mime'
 require 'json'
 require 'typhoeus'
+require 'uri'
 
 require 'filestack/config'
 class IntelligentState
@@ -60,8 +61,11 @@ module UploadUtils
               else
                 FilestackConfig::HEADERS
               end
+
+    url_parse = URI.parse(url)
+    encoded_query = url_parse.query.nil? ? "" : "?#{CGI.escape(url.query)}"
     Typhoeus.public_send(
-      action, CGI.escape(url), params: parameters, headers: headers
+      action, "#{url_parse.scheme}://#{url_parse.host}#{url_parse.path}?#{encoded_query}" , params: parameters, headers: headers
     )
   end
 
